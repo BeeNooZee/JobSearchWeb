@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Relances & rappels · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Relances & rappels</h1>
+  <button class="btn primary" onclick="document.getElementById('new-rem').showModal()">＋ Rappel</button>
+</div>
+
+{% if reminders %}
+<div class="card">
+  <ul class="list">
+    {% for r in reminders %}
+    <li class="{{ 'done' if r.done }}">
+      <div>
+        {% if r.application %}<a href="/candidature/{{ r.application_id }}"><strong>{{ r.label }}</strong></a>
+        <span class="muted small">· {{ r.application.company }}</span>
+        {% else %}<strong>{{ r.label }}</strong>{% endif %}
+      </div>
+      <span class="when {{ 'late' if (not r.done and r.due and r.due < today) }}">{{ r.due|date }}</span>
+      <div class="row-actions">
+        <form method="post" action="/rappel/{{ r.id }}/fait"><button class="chip">{{ '↩︎' if r.done else '✓' }}</button></form>
+        <form method="post" action="/rappel/{{ r.id }}/supprimer"><button class="chip">✕</button></form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}<p class="muted">Aucun rappel. Ajoute-en un pour ne rien oublier. 🙂</p>{% endif %}
+
+<dialog id="new-rem" class="modal">
+  <form method="post" action="/rappels">
+    <div class="modal-head"><h2>Nouveau rappel</h2>
+      <button type="button" class="x" onclick="this.closest('dialog').close()">✕</button></div>
+    <label class="f">Intitulé *<input name="label" required autofocus placeholder="Ex : relancer par mail"></label>
+    <div class="grid-2">
+      <label class="f">Échéance *<input name="due" type="date" required></label>
+      <label class="f">Candidature liée
+        <select name="application_id"><option value="">—</option>
+          {% for a in apps %}<option value="{{ a.id }}">{{ a.company }}</option>{% endfor %}
+        </select></label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="this.closest('dialog').close()">Annuler</button>
+      <button type="submit" class="btn primary">Ajouter</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

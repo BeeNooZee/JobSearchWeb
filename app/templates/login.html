@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% set hide_nav = true %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">🎯</div>
+    <h1>Ma recherche d'alternance</h1>
+    <p class="muted">Connecte-toi pour accéder à ton suivi.</p>
+    {% if msg %}<div class="flash err">{{ msg }}</div>{% endif %}
+    <form method="post" action="/login">
+      <label>Mot de passe</label>
+      <input type="password" name="password" autofocus required autocomplete="current-password">
+      <button class="btn primary block" type="submit">Se connecter</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+name: Déploiement
+
+# Pousser sur main (ou lancer manuellement) déploie automatiquement sur la VM
+# via un runner auto-hébergé (étiquette « alternance ») qui tourne sur 192.168.1.58.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-alternance
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, alternance]
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Déployer
+        run: bash deploy/deploy.sh "$GITHUB_WORKSPACE"

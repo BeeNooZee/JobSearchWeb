@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Secrets & données d'exécution (jamais sur GitHub)
+.env
+*.db
+keys/
+uploads/
+
+# Données personnelles / local
+suivi_candidatures_alternance.xlsx
+*.xlsx
+import_recs.json
+.DS_Store

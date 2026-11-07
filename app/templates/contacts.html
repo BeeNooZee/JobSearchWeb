@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Contacts · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Contacts</h1>
+  <button class="btn primary" onclick="document.getElementById('new-contact').showModal()">＋ Contact</button>
+</div>
+
+{% if contacts %}
+<div class="card table-card">
+  <table class="data">
+    <thead><tr><th>Nom</th><th>Fonction</th><th>Coordonnées</th><th>Entreprise</th><th></th></tr></thead>
+    <tbody>
+      {% for c in contacts %}
+      <tr>
+        <td><strong>{{ c.name }}</strong></td>
+        <td class="muted">{{ c.role }}</td>
+        <td class="muted small">
+          {% if c.email %}<a href="mailto:{{ c.email }}">{{ c.email }}</a>{% endif %}
+          {% if c.phone %}<div>{{ c.phone }}</div>{% endif %}
+          {% if c.linkedin %}<a href="{{ c.linkedin }}" target="_blank" rel="noreferrer">LinkedIn</a>{% endif %}
+        </td>
+        <td>{% if c.application %}<a href="/candidature/{{ c.application_id }}">{{ c.application.company }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td><form method="post" action="/contact/{{ c.id }}/supprimer"><button class="chip">✕</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}<p class="muted">Aucun contact pour l'instant.</p>{% endif %}
+
+<dialog id="new-contact" class="modal">
+  <form method="post" action="/contacts">
+    <div class="modal-head"><h2>Nouveau contact</h2>
+      <button type="button" class="x" onclick="this.closest('dialog').close()">✕</button></div>
+    <div class="grid-2">
+      <label class="f">Nom *<input name="name" required autofocus></label>
+      <label class="f">Fonction<input name="role" placeholder="RH, manager…"></label>
+      <label class="f">Email<input name="email" type="email"></label>
+      <label class="f">Téléphone<input name="phone"></label>
+      <label class="f">LinkedIn<input name="linkedin" placeholder="https://linkedin.com/in/…"></label>
+      <label class="f">Entreprise liée
+        <select name="application_id"><option value="">—</option>
+          {% for a in apps %}<option value="{{ a.id }}">{{ a.company }}</option>{% endfor %}
+        </select></label>
+    </div>
+    <label class="f">Notes<textarea name="notes" rows="2"></textarea></label>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="this.closest('dialog').close()">Annuler</button>
+      <button type="submit" class="btn primary">Ajouter</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

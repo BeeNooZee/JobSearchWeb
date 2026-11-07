@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
+  <meta name="theme-color" content="#4f7cff">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="icon" href="/static/icon-192.png">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+{% if not hide_nav %}
+<header class="topbar">
+  <button class="burger" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="/">🎯 Alternance</a>
+  <div class="spacer"></div>
+  <a class="icon-link" href="/parametres" title="Paramètres">⚙️</a>
+</header>
+<nav class="sidebar">
+  <a href="/" class="{{ 'active' if request.url.path == '/' }}">📊 Tableau de bord</a>
+  <a href="/tableau" class="{{ 'active' if request.url.path.startswith('/tableau') or request.url.path.startswith('/candidature') }}">🗂️ Candidatures</a>
+  <a href="/rappels" class="{{ 'active' if request.url.path.startswith('/rappels') }}">🔔 Relances & rappels</a>
+  <a href="/contacts" class="{{ 'active' if request.url.path.startswith('/contacts') }}">👥 Contacts</a>
+  <a href="/documents" class="{{ 'active' if request.url.path.startswith('/documents') }}">📄 Documents</a>
+  <div class="nav-sep"></div>
+  <a href="/parametres" class="{{ 'active' if request.url.path.startswith('/parametres') }}">⚙️ Paramètres</a>
+  <a href="/logout">🚪 Déconnexion</a>
+</nav>
+<div class="nav-backdrop" onclick="document.body.classList.remove('nav-open')"></div>
+{% endif %}
+
+<main class="content {{ 'full' if hide_nav }}">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="/static/app.js" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

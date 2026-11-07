@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ a.company }} · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="/tableau">← Candidatures</a>
+    <h1>{{ a.company }} {% if a.priority %}⭐{% endif %}</h1>
+    <div class="sub">{{ a.role }} {% if a.location %}· 📍 {{ a.location }}{% endif %}
+      <span class="badge b-{{ a.status }}">{{ STATUS_LABELS.get(a.status) }}</span></div>
+  </div>
+  <form method="post" action="/candidature/{{ a.id }}/supprimer"
+        onsubmit="return confirm('Supprimer définitivement cette candidature ?')">
+    <button class="btn danger" type="submit">🗑️ Supprimer</button>
+  </form>
+</div>
+
+<div class="cols-2">
+  <section class="card">
+    <h2>✏️ Fiche</h2>
+    <form method="post" action="/candidature/{{ a.id }}">
+      <div class="grid-2">
+        <label class="f">Entreprise<input name="company" value="{{ a.company }}" required></label>
+        <label class="f">Poste<input name="role" value="{{ a.role }}"></label>
+        <label class="f">Lieu<input name="location" value="{{ a.location }}"></label>
+        <label class="f">Source<input name="source" value="{{ a.source }}"></label>
+        <label class="f">Rémunération<input name="salary" value="{{ a.salary }}"></label>
+        <label class="f">Type de contrat
+          <select name="contract">
+            {% for c in ['', 'Apprentissage', 'Professionnalisation'] %}
+            <option {{ 'selected' if a.contract == c }}>{{ c }}</option>{% endfor %}
+          </select></label>
+        <label class="f">Rythme<input name="rhythm" value="{{ a.rhythm }}"></label>
+        <label class="f">Durée<input name="duration" value="{{ a.duration }}"></label>
+        <label class="f">Début souhaité<input name="start_date" type="date" value="{{ a.start_date }}"></label>
+        <label class="f">Statut
+          <select name="status">
+            {% for key, label in STATUSES %}<option value="{{ key }}" {{ 'selected' if a.status == key }}>{{ label }}</option>{% endfor %}
+          </select></label>
+        <label class="f">Date de relance<input name="next_action" type="date" value="{{ a.next_action }}"></label>
+        <label class="f chk"><input type="checkbox" name="priority" value="1" {{ 'checked' if a.priority }}> ⭐ Favori</label>
+      </div>
+      <label class="f">Lien de l'offre<input name="url" type="url" value="{{ a.url }}"></label>
+      {% if a.url %}<a class="muted small" href="{{ a.url }}" target="_blank" rel="noreferrer">↗ Ouvrir l'offre</a>{% endif %}
+      <label class="f">Notes<textarea name="notes" rows="4">{{ a.notes }}</textarea></label>
+      <div class="modal-actions"><button class="btn primary" type="submit">💾 Enregistrer</button></div>
+    </form>
+  </section>
+
+  <div class="stack">
+    <section class="card">
+      <h2>📅 Entretiens</h2>
+      {% for iv in a.interviews %}
+      <div class="row {{ 'done' if iv.done }}">
+        <div><strong>{{ iv.when_at|datetime }}</strong> · {{ iv.kind }}
+          {% if iv.place %}<div class="muted small">{{ iv.place }}</div>{% endif %}
+          {% if iv.notes %}<div class="muted small">{{ iv.notes }}</div>{% endif %}</div>
+        <div class="row-actions">
+          <form method="post" action="/entretien/{{ iv.id }}/fait"><button class="chip" title="Marquer fait">{{ '↩︎' if iv.done else '✓' }}</button></form>
+          <form method="post" action="/entretien/{{ iv.id }}/supprimer"><button class="chip" title="Supprimer">✕</button></form>
+        </div>
+      </div>
+      {% else %}<p class="muted">Aucun entretien.</p>{% endfor %}
+      <details class="add"><summary>＋ Planifier un entretien</summary>
+        <form method="post" action="/candidature/{{ a.id }}/entretien" class="mini-form">
+          <input name="when_at" type="datetime-local" required>
+          <select name="kind"><option>visio</option><option>présentiel</option><option>téléphone</option></select>
+          <input name="place" placeholder="Lieu ou lien visio">
+          <input name="notes" placeholder="Notes">
+          <button class="btn primary" type="submit">Ajouter</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>🔔 Rappels</h2>
+      {% for r in a.reminders %}
+      <div class="row {{ 'done' if r.done }}">
+        <div><strong>{{ r.label }}</strong> <span class="muted small">{{ r.due|date }}</span></div>
+        <div class="row-actions">
+          <form method="post" action="/rappel/{{ r.id }}/fait"><input type="hidden" name="back" value="/candidature/{{ a.id }}"><button class="chip">{{ '↩︎' if r.done else '✓' }}</button></form>
+          <form method="post" action="/rappel/{{ r.id }}/supprimer"><input type="hidden" name="back" value="/candidature/{{ a.id }}"><button class="chip">✕</button></form>
+        </div>
+      </div>
+      {% else %}<p class="muted">Aucun rappel.</p>{% endfor %}
+      <details class="add"><summary>＋ Ajouter un rappel</summary>
+        <form method="post" action="/rappels" class="mini-form">
+          <input type="hidden" name="application_id" value="{{ a.id }}">
+          <input type="hidden" name="back" value="/candidature/{{ a.id }}">
+          <input name="label" placeholder="Ex : relancer par mail" required>
+          <input name="due" type="date" required>
+          <button class="btn primary" type="submit">Ajouter</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>👥 Contacts</h2>
+      {% for c in a.contacts %}
+      <div class="row">
+        <div><strong>{{ c.name }}</strong> {% if c.role %}<span class="muted small">· {{ c.role }}</span>{% endif %}
+          <div class="muted small">
+            {% if c.email %}<a href="mailto:{{ c.email }}">{{ c.email }}</a>{% endif %}
+            {% if c.phone %} · {{ c.phone }}{% endif %}
+            {% if c.linkedin %} · <a href="{{ c.linkedin }}" target="_blank" rel="noreferrer">LinkedIn</a>{% endif %}
+          </div></div>
+        <div class="row-actions">
+          <form method="post" action="/contact/{{ c.id }}/supprimer"><input type="hidden" name="back" value="/candidature/{{ a.id }}"><button class="chip">✕</button></form>
+        </div>
+      </div>
+      {% else %}<p class="muted">Aucun contact.</p>{% endfor %}
+      <details class="add"><summary>＋ Ajouter un contact</summary>
+        <form method="post" action="/contacts" class="mini-form">
+          <input type="hidden" name="application_id" value="{{ a.id }}">
+          <input type="hidden" name="back" value="/candidature/{{ a.id }}">
+          <input name="name" placeholder="Nom" required>
+          <input name="role" placeholder="Fonction (RH, manager…)">
+          <input name="email" type="email" placeholder="Email">
+          <input name="phone" placeholder="Téléphone">
+          <input name="linkedin" placeholder="Lien LinkedIn">
+          <button class="btn primary" type="submit">Ajouter</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>📄 Documents</h2>
+      {% for d in a.documents %}
+      <div class="row">
+        <div><strong>{{ d.title }}</strong> <span class="badge small">{{ d.kind }}</span>
+          <div class="muted small">
+            {% if d.stored %}<a href="/document/{{ d.id }}" target="_blank">⬇ {{ d.filename }} ({{ d.size|size }})</a>
+            {% elif d.link %}<a href="{{ d.link }}" target="_blank" rel="noreferrer">↗ {{ d.link }}</a>{% endif %}
+          </div></div>
+        <div class="row-actions">
+          <form method="post" action="/document/{{ d.id }}/supprimer"><button class="chip">✕</button></form>
+        </div>
+      </div>
+      {% else %}<p class="muted">Aucun document.</p>{% endfor %}
+      <details class="add"><summary>＋ Joindre un document</summary>
+        <form method="post" action="/documents" enctype="multipart/form-data" class="mini-form">
+          <input type="hidden" name="application_id" value="{{ a.id }}">
+          <input name="title" placeholder="Titre (optionnel)">
+          <select name="kind"><option>CV</option><option>LM</option><option>autre</option></select>
+          <input name="file" type="file">
+          <input name="link" placeholder="…ou un lien externe">
+          <button class="btn primary" type="submit">Ajouter</button>
+        </form>
+      </details>
+    </section>
+  </div>
+</div>
+{% endblock %}

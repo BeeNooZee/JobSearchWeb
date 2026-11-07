@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Candidatures · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Candidatures</h1>
+  <form class="search" method="get" action="/tableau">
+    <input name="q" value="{{ q }}" placeholder="🔎 Rechercher…">
+  </form>
+  <button class="btn primary" onclick="document.getElementById('new-app').showModal()">＋ Candidature</button>
+</div>
+
+<div class="board">
+  {% for key, label in STATUSES %}
+  <div class="board-col" data-status="{{ key }}">
+    <div class="board-col-head">
+      <span class="dot dot-{{ key }}"></span> {{ label }}
+      <span class="count">{{ cols.get(key, [])|length }}</span>
+    </div>
+    <div class="board-drop" data-status="{{ key }}">
+      {% for a in cols.get(key, []) %}
+      <a class="kard" href="/candidature/{{ a.id }}" draggable="true" data-id="{{ a.id }}">
+        <div class="kard-top">
+          <strong>{{ a.company }}</strong>
+          {% if a.priority %}<span title="Favori">⭐</span>{% endif %}
+        </div>
+        {% if a.role %}<div class="kard-role">{{ a.role }}</div>{% endif %}
+        <div class="kard-meta">
+          {% if a.location %}<span>📍 {{ a.location }}</span>{% endif %}
+          {% if a.next_action %}<span class="na">🔁 {{ a.next_action|date }}</span>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<dialog id="new-app" class="modal">
+  <form method="post" action="/candidatures">
+    <div class="modal-head"><h2>Nouvelle candidature</h2>
+      <button type="button" class="x" onclick="this.closest('dialog').close()">✕</button></div>
+    <div class="grid-2">
+      <label class="f">Entreprise *<input name="company" required autofocus></label>
+      <label class="f">Poste<input name="role" placeholder="Alternant·e …"></label>
+      <label class="f">Lieu<input name="location"></label>
+      <label class="f">Source<input name="source" placeholder="LinkedIn, site, cooptation…"></label>
+      <label class="f">Lien de l'offre<input name="url" type="url" placeholder="https://…"></label>
+      <label class="f">Rémunération<input name="salary"></label>
+      <label class="f">Type de contrat
+        <select name="contract">
+          <option value="">—</option><option>Apprentissage</option><option>Professionnalisation</option>
+        </select></label>
+      <label class="f">Rythme<input name="rhythm" placeholder="3 sem. / 1 sem.…"></label>
+      <label class="f">Début souhaité<input name="start_date" type="date"></label>
+      <label class="f">Statut
+        <select name="status">
+          {% for key, label in STATUSES %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select></label>
+      <label class="f">Date de relance<input name="next_action" type="date"></label>
+      <label class="f chk"><input type="checkbox" name="priority" value="1"> ⭐ Favori</label>
+    </div>
+    <label class="f">Notes<textarea name="notes" rows="2"></textarea></label>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="this.closest('dialog').close()">Annuler</button>
+      <button type="submit" class="btn primary">Créer</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}<script>window.__board = true;</script>{% endblock %}

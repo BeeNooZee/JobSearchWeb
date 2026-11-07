@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Tableau de bord</h1>
+  <a class="btn primary" href="/tableau">＋ Candidature</a>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="stat-v">{{ total }}</div><div class="stat-k">Candidatures</div></div>
+  <div class="stat"><div class="stat-v">{{ active }}</div><div class="stat-k">En cours</div></div>
+  <div class="stat"><div class="stat-v">{{ counts.get('entretien', 0) }}</div><div class="stat-k">En entretien</div></div>
+  <div class="stat ok"><div class="stat-v">{{ counts.get('acceptee', 0) }}</div><div class="stat-k">Acceptées</div></div>
+</div>
+
+<div class="pipeline">
+  {% for key, label in STATUSES %}
+  <a class="pipe pipe-{{ key }}" href="/tableau">
+    <span class="pipe-n">{{ counts.get(key, 0) }}</span>
+    <span class="pipe-l">{{ label }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="cols-2">
+  <section class="card">
+    <h2>📅 Entretiens à venir</h2>
+    {% if interviews %}
+    <ul class="list">
+      {% for iv in interviews %}
+      <li>
+        <a href="/candidature/{{ iv.application_id }}">
+          <strong>{{ iv.application.company if iv.application else '—' }}</strong>
+          <span class="muted">· {{ iv.kind }}</span>
+        </a>
+        <span class="when">{{ iv.when_at|datetime }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Aucun entretien planifié.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>🔔 Relances & rappels</h2>
+    {% if reminders %}
+    <ul class="list">
+      {% for kind, due, label, aid, rid, late in reminders %}
+      <li>
+        {% if aid %}<a href="/candidature/{{ aid }}">{{ label }}</a>{% else %}<span>{{ label }}</span>{% endif %}
+        <span class="when {{ 'late' if late }}">{{ due|date }}{% if late %} · en retard{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Rien à relancer pour l'instant. 🎉</p>{% endif %}
+  </section>
+</div>
+
+<section class="card">
+  <h2>🕑 Activité récente</h2>
+  {% if recent %}
+  <div class="mini-cards">
+    {% for a in recent %}
+    <a class="mini" href="/candidature/{{ a.id }}">
+      <span class="dot dot-{{ a.status }}"></span>
+      <span class="mini-main"><strong>{{ a.company }}</strong><span class="muted">{{ a.role }}</span></span>
+      <span class="badge b-{{ a.status }}">{{ STATUS_LABELS.get(a.status) }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Pas encore de candidature. <a href="/tableau">Ajoute ta première !</a></p>
+  {% endif %}
+</section>
+{% endblock %}

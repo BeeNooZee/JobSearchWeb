@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Documents · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Documents</h1>
+  <button class="btn primary" onclick="document.getElementById('new-doc').showModal()">＋ Document</button>
+</div>
+
+{% if documents %}
+<div class="doc-grid">
+  {% for d in documents %}
+  <div class="card doc">
+    <div class="doc-ico">{{ '🖼️' if d.content_type.startswith('image/') else '📄' }}</div>
+    <div class="doc-main">
+      <strong>{{ d.title }}</strong> <span class="badge small">{{ d.kind }}</span>
+      <div class="muted small">
+        {% if d.application %}<a href="/candidature/{{ d.application_id }}">{{ d.application.company }}</a> · {% endif %}
+        {% if d.stored %}<a href="/document/{{ d.id }}" target="_blank">⬇ Télécharger ({{ d.size|size }})</a>
+        {% elif d.link %}<a href="{{ d.link }}" target="_blank" rel="noreferrer">↗ Ouvrir le lien</a>{% endif %}
+      </div>
+    </div>
+    <form method="post" action="/document/{{ d.id }}/supprimer"><button class="chip">✕</button></form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}<p class="muted">Aucun document. Ajoute ton CV et tes lettres de motivation.</p>{% endif %}
+
+<dialog id="new-doc" class="modal">
+  <form method="post" action="/documents" enctype="multipart/form-data">
+    <div class="modal-head"><h2>Nouveau document</h2>
+      <button type="button" class="x" onclick="this.closest('dialog').close()">✕</button></div>
+    <label class="f">Titre<input name="title" placeholder="CV 2026, Lettre Capgemini…"></label>
+    <div class="grid-2">
+      <label class="f">Type
+        <select name="kind"><option>CV</option><option>LM</option><option>autre</option></select></label>
+      <label class="f">Candidature liée
+        <select name="application_id"><option value="">—</option>
+          {% for a in apps %}<option value="{{ a.id }}">{{ a.company }}</option>{% endfor %}
+        </select></label>
+    </div>
+    <label class="f">Fichier (PDF, Word, image, ZIP… max 25 Mo)<input name="file" type="file"></label>
+    <label class="f">…ou un lien externe<input name="link" placeholder="https://… (Drive, etc.)"></label>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="this.closest('dialog').close()">Annuler</button>
+      <button type="submit" class="btn primary">Ajouter</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
