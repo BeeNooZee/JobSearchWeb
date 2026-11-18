@@ -24,6 +24,17 @@ STATUSES = [
 STATUS_KEYS = [k for k, _ in STATUSES]
 STATUS_LABELS = dict(STATUSES)
 
+# Colonnes du tableau de tâches : un seul tableau fixe pour organiser la
+# recherche d'alternance (indépendant du pipeline de candidatures).
+TASK_COLUMNS = [
+    ("todo", "À faire"),
+    ("doing", "En cours"),
+    ("waiting", "En attente"),
+    ("done", "Terminé"),
+]
+TASK_COLUMN_KEYS = [k for k, _ in TASK_COLUMNS]
+TASK_COLUMN_LABELS = dict(TASK_COLUMNS)
+
 
 class Setting(Base):
     """Petit magasin clé→valeur (mot de passe, préférences)."""
@@ -128,6 +139,22 @@ class Document(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
     application: Mapped["Application"] = relationship(back_populates="documents")
+
+
+class Task(Base):
+    """Tâche du tableau Kanban de suivi de la recherche (un seul tableau fixe,
+    sans lien avec une candidature : « Refaire le CV », « Relancer X »…)."""
+    __tablename__ = "tasks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(200), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    column: Mapped[str] = mapped_column(String(24), default="todo", index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=0)        # 0 normal, 1 favori
+    due: Mapped[str] = mapped_column(String(32), default="")         # échéance "YYYY-MM-DD"
+    position: Mapped[int] = mapped_column(Integer, default=0)        # ordre dans la colonne
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
 
 
 class PushSubscription(Base):

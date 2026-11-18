@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Tâches · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Tâches</h1>
+  <p class="muted" style="flex:1">Ton tableau pour organiser la recherche : relances à faire, CV à refaire, entretiens à préparer…</p>
+  <button class="btn primary" onclick="openTask()">＋ Tâche</button>
+</div>
+
+<div class="board" data-move-url="/tache/{id}/colonne" data-move-key="column">
+  {% for key, label in TASK_COLUMNS %}
+  <div class="board-col" data-status="{{ key }}">
+    <div class="board-col-head">
+      <span class="dot dot-{{ key }}"></span> {{ label }}
+      <span class="count">{{ cols.get(key, [])|length }}</span>
+    </div>
+    <div class="board-drop" data-status="{{ key }}">
+      {% for t in cols.get(key, []) %}
+      <div class="kard" draggable="true" data-id="{{ t.id }}"
+           data-title="{{ t.title }}" data-notes="{{ t.notes }}"
+           data-due="{{ t.due }}" data-priority="{{ t.priority }}" data-column="{{ t.column }}"
+           onclick="openTask(this)">
+        <div class="kard-top">
+          <strong>{{ t.title }}</strong>
+          {% if t.priority %}<span title="Favori">⭐</span>{% endif %}
+        </div>
+        {% if t.notes %}<div class="kard-role">{{ t.notes|truncate(90) }}</div>{% endif %}
+        {% if t.due %}<div class="kard-meta"><span class="na">📅 {{ t.due|date }}</span></div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<dialog id="task-modal" class="modal">
+  <form method="post" id="task-form" action="/taches">
+    <div class="modal-head">
+      <h2 id="task-modal-title">Nouvelle tâche</h2>
+      <button type="button" class="x" onclick="this.closest('dialog').close()">✕</button>
+    </div>
+    <label class="f">Titre *<input name="title" id="task-title" required autofocus placeholder="Relancer l'entreprise X…"></label>
+    <div class="grid-2">
+      <label class="f">Colonne
+        <select name="column" id="task-column">
+          {% for key, label in TASK_COLUMNS %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+        </select></label>
+      <label class="f">Échéance<input name="due" id="task-due" type="date"></label>
+    </div>
+    <label class="f chk"><input type="checkbox" name="priority" id="task-priority" value="1"> ⭐ Favori</label>
+    <label class="f">Notes<textarea name="notes" id="task-notes" rows="3"></textarea></label>
+    <div class="modal-actions">
+      <button type="button" class="btn danger" id="task-delete" hidden onclick="deleteTask()">Supprimer</button>
+      <div style="flex:1"></div>
+      <button type="button" class="btn" onclick="this.closest('dialog').close()">Annuler</button>
+      <button type="submit" class="btn primary" id="task-submit">Créer</button>
+    </div>
+  </form>
+</dialog>
+
+<form method="post" id="task-delete-form" hidden></form>
+{% endblock %}
+{% block scripts %}<script>
+window.__board = true;
+function openTask(card) {
+  const m = document.getElementById("task-modal");
+  const form = document.getElementById("task-form");
+  const del = document.getElementById("task-delete");
+  if (card) {
+    form.action = "/tache/" + card.dataset.id;
+    document.getElementById("task-modal-title").textContent = "Modifier la tâche";
+    document.getElementById("task-submit").textContent = "Enregistrer";
+    document.getElementById("task-title").value = card.dataset.title || "";
+    document.getElementById("task-notes").value = card.dataset.notes || "";
+    document.getElementById("task-due").value = card.dataset.due || "";
+    document.getElementById("task-column").value = card.dataset.column || "todo";
+    document.getElementById("task-priority").checked = card.dataset.priority === "1";
+    del.hidden = false;
+    document.getElementById("task-delete-form").action = "/tache/" + card.dataset.id + "/supprimer";
+  } else {
+    form.action = "/taches";
+    document.getElementById("task-modal-title").textContent = "Nouvelle tâche";
+    document.getElementById("task-submit").textContent = "Créer";
+    form.reset();
+    del.hidden = true;
+  }
+  m.showModal();
+}
+function deleteTask() {
+  if (confirm("Supprimer cette tâche ?")) document.getElementById("task-delete-form").submit();
+}
+</script>{% endblock %}

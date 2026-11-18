@@ -16,7 +16,8 @@ from sqlalchemy.orm import Session
 from .config import settings
 from .database import Base, SessionLocal, engine, get_db
 from .models import (Application, Contact, Document, Interview, PushSubscription,
-                     Reminder, STATUS_KEYS, STATUS_LABELS, STATUSES, Setting)
+                     Reminder, STATUS_KEYS, STATUS_LABELS, STATUSES, Setting,
+                     Task, TASK_COLUMNS, TASK_COLUMN_KEYS)
 from . import push as push_mod
 from . import reminders as reminders_mod
 from . import security as sec
@@ -74,7 +75,8 @@ def _fmt_size(n):
 templates.env.filters["date"] = _fmt_date
 templates.env.filters["datetime"] = _fmt_dt
 templates.env.filters["size"] = _fmt_size
-templates.env.globals.update(STATUSES=STATUSES, STATUS_LABELS=STATUS_LABELS, APP_NAME=settings.APP_NAME)
+templates.env.globals.update(STATUSES=STATUSES, STATUS_LABELS=STATUS_LABELS,
+                             TASK_COLUMNS=TASK_COLUMNS, APP_NAME=settings.APP_NAME)
 
 
 # --- Authentification (middleware) ------------------------------------------
@@ -303,6 +305,78 @@ async def set_status(aid: int, request: Request, db: Session = Depends(get_db)):
     if "position" in data:
         try:
             a.position = int(data["position"])
+        except (TypeError, ValueError):
+            pass
+    db.commit()
+    return {"ok": True}
+
+
+# --- Tâches (tableau Kanban fixe de suivi de la recherche) ------------------
+@app.get("/taches", response_class=HTMLResponse)
+def tasks_board(request: Request, db: Session = Depends(get_db)):
+    rows = db.scalars(select(Task).order_by(Task.position, Task.id)).all()
+    cols = {k: [] for k in TASK_COLUMN_KEYS}
+    for t in rows:
+        cols[t.column if t.column in cols else "todo"].append(t)
+    return templates.TemplateResponse("taches.html", _ctx(request, cols=cols))
+
+
+def _task_form(t: Task, f: dict) -> None:
+    t.title = (f.get("title") or "").strip()[:200]
+    t.notes = (f.get("notes") or "").strip()
+    t.due = (f.get("due") or "").strip()
+    t.priority = 1 if f.get("priority") else 0
+    col = (f.get("column") or t.column).strip()
+    if col in TASK_COLUMN_KEYS:
+        t.column = col
+
+
+@app.post("/taches")
+async def create_task(request: Request, db: Session = Depends(get_db)):
+    f = await request.form()
+    if (f.get("title") or "").strip():
+        t = Task()
+        _task_form(t, f)
+        db.add(t)
+        db.commit()
+    return RedirectResponse("/taches", status_code=303)
+
+
+@app.post("/tache/{tid}")
+async def update_task(tid: int, request: Request, db: Session = Depends(get_db)):
+    t = db.get(Task, tid)
+    if t is None:
+        raise HTTPException(404, "Tâche introuvable")
+    f = await request.form()
+    if (f.get("title") or "").strip():
+        _task_form(t, f)
+        db.commit()
+    return RedirectResponse("/taches", status_code=303)
+
+
+@app.post("/tache/{tid}/supprimer")
+def delete_task(tid: int, db: Session = Depends(get_db)):
+    t = db.get(Task, tid)
+    if t:
+        db.delete(t)
+        db.commit()
+    return RedirectResponse("/taches", status_code=303)
+
+
+@app.post("/tache/{tid}/colonne")
+async def set_task_column(tid: int, request: Request, db: Session = Depends(get_db)):
+    """Déplacement d'une tâche entre colonnes (glisser-déposer, JSON)."""
+    t = db.get(Task, tid)
+    if t is None:
+        raise HTTPException(404, "Tâche introuvable")
+    data = await request.json()
+    col = (data.get("column") or "").strip()
+    if col not in TASK_COLUMN_KEYS:
+        raise HTTPException(400, "Colonne invalide")
+    t.column = col
+    if "position" in data:
+        try:
+            t.position = int(data["position"])
         except (TypeError, ValueError):
             pass
     db.commit()

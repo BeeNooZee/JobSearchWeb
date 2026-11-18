@@ -9,6 +9,9 @@ if ("serviceWorker" in navigator) {
 // --- Tableau Kanban : glisser-déposer --------------------------------------
 (function board() {
   if (!window.__board) return;
+  const boardEl = document.querySelector(".board");
+  const moveUrl = (boardEl && boardEl.dataset.moveUrl) || "/candidature/{id}/statut";
+  const moveKey = (boardEl && boardEl.dataset.moveKey) || "status";
   let dragId = null;
 
   document.querySelectorAll(".kard").forEach((k) => {
@@ -31,13 +34,14 @@ if ("serviceWorker" in navigator) {
       const id = dragId || e.dataTransfer.getData("text/plain");
       if (!id) return;
       const card = document.querySelector(`.kard[data-id="${id}"]`);
-      const status = col.dataset.status;
+      const value = col.dataset.status;
       if (card) col.appendChild(card);
       try {
-        await fetch(`/candidature/${id}/statut`, {
+        await fetch(moveUrl.replace("{id}", id), {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status, position: 0 }),
+          body: JSON.stringify({ [moveKey]: value, position: 0 }),
         });
+        if (card) card.dataset[moveKey] = value;   // garde la carte éditable à jour
         updateCounts();
       } catch (_) { location.reload(); }
     });

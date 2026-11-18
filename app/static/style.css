@@ -111,6 +111,8 @@ h2 { font-size: 1.05rem; margin: 0 0 12px; }
 .dot-relance{background:var(--s-relance)} .dot-entretien{background:var(--s-entretien)}
 .dot-offre{background:var(--s-offre)} .dot-acceptee{background:var(--s-acceptee)}
 .dot-refusee{background:var(--s-refusee)}
+.dot-todo{background:#64748b} .dot-doing{background:#4f7cff}
+.dot-waiting{background:#e0a000} .dot-done{background:#22c55e}
 .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 700; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
 .badge.small { font-size: .68rem; padding: 1px 7px; }
 .b-a_postuler{background:#64748b22;color:var(--s-a_postuler)} .b-envoyee{background:#4f7cff22;color:var(--s-envoyee)}

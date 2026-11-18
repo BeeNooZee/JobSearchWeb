@@ -21,6 +21,7 @@
 <nav class="sidebar">
   <a href="/" class="{{ 'active' if request.url.path == '/' }}">📊 Tableau de bord</a>
   <a href="/tableau" class="{{ 'active' if request.url.path.startswith('/tableau') or request.url.path.startswith('/candidature') }}">🗂️ Candidatures</a>
+  <a href="/taches" class="{{ 'active' if request.url.path.startswith('/taches') or request.url.path.startswith('/tache') }}">✅ Tâches</a>
   <a href="/rappels" class="{{ 'active' if request.url.path.startswith('/rappels') }}">🔔 Relances & rappels</a>
   <a href="/contacts" class="{{ 'active' if request.url.path.startswith('/contacts') }}">👥 Contacts</a>
   <a href="/documents" class="{{ 'active' if request.url.path.startswith('/documents') }}">📄 Documents</a>
