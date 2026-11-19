@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}À relancer · {{ APP_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>📨 À relancer</h1>
+  <span class="muted">{{ apps|length }} candidature{{ 's' if apps|length > 1 }} envoyée{{ 's' if apps|length > 1 }} pas encore relancée{{ 's' if apps|length > 1 }}</span>
+</div>
+
+{% if apps %}
+<div class="card">
+  <ul class="list">
+    {% for a in apps %}
+    <li>
+      <div>
+        <a href="/candidature/{{ a.id }}"><strong>{{ a.company or "Sans nom" }}</strong></a>
+        {% if a.role %}<span class="muted small">· {{ a.role }}</span>{% endif %}
+        {% if a.location %}<span class="muted small">· {{ a.location }}</span>{% endif %}
+      </div>
+      <span class="when {{ 'late' if (a.next_action and a.next_action < today) }}">
+        {% if a.next_action %}Relance : {{ a.next_action|date }}{% else %}Pas de date{% endif %}
+      </span>
+      <div class="row-actions">
+        <a class="chip" href="/candidature/{{ a.id }}" title="Ouvrir">↗</a>
+        <form method="post" action="/candidature/{{ a.id }}/relancer"
+              onsubmit="return confirm('Marquer « {{ a.company }} » comme relancée ?');">
+          <button class="chip" title="Marquer comme relancée">✓ Relancé</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+<p class="muted small">Les candidatures sans date de relance ont été datées au 23/11/2026 pour démarrer. « ✓ Relancé » les fait passer au statut « Relancée ».</p>
+{% else %}
+<p class="muted">Aucune candidature à relancer. 🎉 Tout est à jour.</p>
+{% endif %}
+{% endblock %}

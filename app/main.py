@@ -105,8 +105,30 @@ def _ctx(request: Request, **kw):
 def on_startup():
     Base.metadata.create_all(bind=engine)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    _backfill_relance_dates()
     reminders_mod.start_worker()
     logger.info("Alternance prêt. Push=%s", settings.push_enabled)
+
+
+def _backfill_relance_dates():
+    """Une seule fois : date de relance par défaut (23/11/2026) sur les candidatures
+    envoyées sans date, pour alimenter la vue « À relancer »."""
+    db = SessionLocal()
+    try:
+        if sec.get_setting(db, "relance_backfill_20261123"):
+            return
+        n = 0
+        for a in db.scalars(select(Application).where(Application.status == "envoyee")).all():
+            if not (a.next_action or "").strip():
+                a.next_action = "2026-11-23"
+                a.na_reminded = False
+                n += 1
+        sec.set_setting(db, "relance_backfill_20261123", "done")
+        db.commit()
+        if n:
+            logger.info("Backfill relance : %s candidature(s) datées au 2026-11-23.", n)
+    finally:
+        db.close()
 
 
 @app.get("/healthz")
@@ -225,6 +247,26 @@ def board(request: Request, q: str = "", db: Session = Depends(get_db)):
     for k in cols:
         cols[k].sort(key=lambda a: (a.position, -(a.priority or 0), a.id))
     return templates.TemplateResponse("board.html", _ctx(request, cols=cols, q=q))
+
+
+# --- À relancer : candidatures envoyées, pas encore relancées ----------------
+@app.get("/a-relancer", response_class=HTMLResponse)
+def a_relancer(request: Request, db: Session = Depends(get_db)):
+    rows = db.scalars(select(Application).where(Application.status == "envoyee")).all()
+    rows.sort(key=lambda a: ((a.next_action or "9999-12-31"), (a.company or "").lower()))
+    today = _local_now().date().isoformat()
+    return templates.TemplateResponse("a_relancer.html", _ctx(request, apps=rows, today=today))
+
+
+@app.post("/candidature/{aid}/relancer")
+def mark_relancee(aid: int, db: Session = Depends(get_db)):
+    """Passe une candidature au statut « Relancée » depuis la vue À relancer."""
+    a = db.get(Application, aid)
+    if a is None:
+        raise HTTPException(404, "Candidature introuvable")
+    a.status = "relance"
+    db.commit()
+    return RedirectResponse("/a-relancer", status_code=303)
 
 
 # --- Détail candidature -----------------------------------------------------
